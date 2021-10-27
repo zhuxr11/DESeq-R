@@ -3,8 +3,8 @@
 
 # RNA-seq Analysis Workflow with DESeq in R
 
-**Author**: Xiurui Zhu<br /> **Modified**: 2021-10-27 16:23:35<br />
-**Compiled**: 2021-10-27 16:23:38
+**Author**: Xiurui Zhu<br /> **Modified**: 2021-10-27 16:29:15<br />
+**Compiled**: 2021-10-27 16:29:17
 
 ## Introduction
 
@@ -113,7 +113,7 @@ print(tx_db)
 #> # Genome: NA
 #> # Nb of transcripts: 41671
 #> # Db created by: GenomicFeatures package from Bioconductor
-#> # Creation time: 2021-10-27 16:25:47 +0800 (Wed, 27 Oct 2021)
+#> # Creation time: 2021-10-27 16:30:25 +0800 (Wed, 27 Oct 2021)
 #> # GenomicFeatures version at creation time: 1.40.1
 #> # RSQLite version at creation time: 2.2.8
 #> # DBSCHEMAVERSION: 1.2
@@ -495,10 +495,10 @@ go_heatmap <- go_heatmap_data %>%
     clustering_method_rows = "average",
     clustering_method_columns = "average",
     clustering_distance_rows = function(x) {
-      as.dist(1 - cor(t(x), method="pearson"))
+      as.dist(1 - cor(t(x), method = "pearson"))
     },
     clustering_distance_columns = function(x) {
-      as.dist(1 - cor(t(x), method="pearson"))
+      as.dist(1 - cor(t(x), method = "pearson"))
     },
     row_names_gp = grid::gpar(fontsize = 4),
     column_names_gp = grid::gpar(fontsize = 8),

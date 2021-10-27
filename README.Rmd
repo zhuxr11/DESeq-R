@@ -292,10 +292,10 @@ go_heatmap <- go_heatmap_data %>%
     clustering_method_rows = "average",
     clustering_method_columns = "average",
     clustering_distance_rows = function(x) {
-      as.dist(1 - cor(t(x), method="pearson"))
+      as.dist(1 - cor(t(x), method = "pearson"))
     },
     clustering_distance_columns = function(x) {
-      as.dist(1 - cor(t(x), method="pearson"))
+      as.dist(1 - cor(t(x), method = "pearson"))
     },
     row_names_gp = grid::gpar(fontsize = 4),
     column_names_gp = grid::gpar(fontsize = 8),
