@@ -286,7 +286,7 @@ go_heatmap <- go_heatmap_data %>%
   ComplexHeatmap::Heatmap(
     col = circlize::colorRamp2(c(-2, 0, 2),
                                c("#00FF00", "#000000", "#FF0000")),
-    name = "value",
+    name = "Value",
     cluster_rows = TRUE,
     cluster_columns = TRUE,
     clustering_method_rows = "average",

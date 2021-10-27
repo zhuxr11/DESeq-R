@@ -3,8 +3,8 @@
 
 # RNA-seq Analysis Workflow with DESeq in R
 
-**Author**: Xiurui Zhu<br /> **Modified**: 2021-10-27 16:13:47<br />
-**Compiled**: 2021-10-27 16:13:50
+**Author**: Xiurui Zhu<br /> **Modified**: 2021-10-27 16:23:35<br />
+**Compiled**: 2021-10-27 16:23:38
 
 ## Introduction
 
@@ -113,7 +113,7 @@ print(tx_db)
 #> # Genome: NA
 #> # Nb of transcripts: 41671
 #> # Db created by: GenomicFeatures package from Bioconductor
-#> # Creation time: 2021-10-27 16:16:15 +0800 (Wed, 27 Oct 2021)
+#> # Creation time: 2021-10-27 16:25:47 +0800 (Wed, 27 Oct 2021)
 #> # GenomicFeatures version at creation time: 1.40.1
 #> # RSQLite version at creation time: 2.2.8
 #> # DBSCHEMAVERSION: 1.2
@@ -489,7 +489,7 @@ go_heatmap <- go_heatmap_data %>%
   ComplexHeatmap::Heatmap(
     col = circlize::colorRamp2(c(-2, 0, 2),
                                c("#00FF00", "#000000", "#FF0000")),
-    name = "value",
+    name = "Value",
     cluster_rows = TRUE,
     cluster_columns = TRUE,
     clustering_method_rows = "average",
