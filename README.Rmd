@@ -259,10 +259,12 @@ go_params <- new(
 )
 print(go_params)
 over_rep <- Category::hyperGTest(go_params)
-head(summary(over_rep)[, c(1L, 2L, 5L, 6L, 7L)])
+print(summary(over_rep)[, c(1L, 2L, 5L, 6L, 7L)])
 ```
 
-Then, the `rlog`-normalized enrichment results were visualized with heatmaps.
+### Heatmap and hierarchical clustering
+
+The `rlog`-normalized filtered count matrix was visualized with heatmap.
 
 ```{r go-enrich-heatmap, fig.height=14}
 go_heatmap_data <- sam_count_filter %>%

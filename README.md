@@ -3,8 +3,8 @@
 
 # RNA-seq Analysis Workflow with DESeq in R
 
-**Author**: Xiurui Zhu<br /> **Modified**: 2021-10-27 15:45:57<br />
-**Compiled**: 2021-10-27 15:45:59
+**Author**: Xiurui Zhu<br /> **Modified**: 2021-10-27 16:13:47<br />
+**Compiled**: 2021-10-27 16:13:50
 
 ## Introduction
 
@@ -113,7 +113,7 @@ print(tx_db)
 #> # Genome: NA
 #> # Nb of transcripts: 41671
 #> # Db created by: GenomicFeatures package from Bioconductor
-#> # Creation time: 2021-10-27 15:47:02 +0800 (Wed, 27 Oct 2021)
+#> # Creation time: 2021-10-27 16:16:15 +0800 (Wed, 27 Oct 2021)
 #> # GenomicFeatures version at creation time: 1.40.1
 #> # RSQLite version at creation time: 2.2.8
 #> # DBSCHEMAVERSION: 1.2
@@ -430,18 +430,44 @@ print(go_params)
 #>   category: GO 
 #> annotation: org.At.tair
 over_rep <- Category::hyperGTest(go_params)
-head(summary(over_rep)[, c(1L, 2L, 5L, 6L, 7L)])
-#>       GOBPID       Pvalue Count Size                                      Term
-#> 1 GO:0010167 1.596988e-06     6   18                       response to nitrate
-#> 2 GO:0042221 1.810717e-05    64 1774                      response to chemical
-#> 3 GO:0009051 4.358056e-05     4   10 pentose-phosphate shunt, oxidative branch
-#> 4 GO:0006739 4.983977e-05     6   31                    NADP metabolic process
-#> 5 GO:0006820 6.187222e-05    13  163                           anion transport
-#> 6 GO:0042128 6.730251e-05     4   11                      nitrate assimilation
+print(summary(over_rep)[, c(1L, 2L, 5L, 6L, 7L)])
+#>        GOBPID       Pvalue Count Size
+#> 1  GO:0010167 1.596988e-06     6   18
+#> 2  GO:0042221 1.810717e-05    64 1774
+#> 3  GO:0009051 4.358056e-05     4   10
+#> 4  GO:0006739 4.983977e-05     6   31
+#> 5  GO:0006820 6.187222e-05    13  163
+#> 6  GO:0042128 6.730251e-05     4   11
+#> 7  GO:0055114 1.465420e-04    20  363
+#> 8  GO:0019676 2.016793e-04     3    6
+#> 9  GO:2001057 2.597026e-04     4   15
+#> 10 GO:0009735 4.465533e-04     7   63
+#> 11 GO:0046942 4.921617e-04     7   64
+#> 12 GO:0006082 5.310063e-04    29  688
+#> 13 GO:0016052 5.379109e-04     9  106
+#> 14 GO:0006091 6.283807e-04    13  206
+#> 15 GO:0001666 8.751107e-04    12  187
+#>                                              Term
+#> 1                             response to nitrate
+#> 2                            response to chemical
+#> 3       pentose-phosphate shunt, oxidative branch
+#> 4                          NADP metabolic process
+#> 5                                 anion transport
+#> 6                            nitrate assimilation
+#> 7                     oxidation-reduction process
+#> 8                      ammonia assimilation cycle
+#> 9     reactive nitrogen species metabolic process
+#> 10                          response to cytokinin
+#> 11                      carboxylic acid transport
+#> 12                 organic acid metabolic process
+#> 13                 carbohydrate catabolic process
+#> 14 generation of precursor metabolites and energy
+#> 15                            response to hypoxia
 ```
 
-Then, the `rlog`-normalized enrichment results were visualized with
-heatmaps.
+### Heatmap and hierarchical clustering
+
+The `rlog`-normalized filtered count matrix was visualized with heatmap.
 
 ``` r
 go_heatmap_data <- sam_count_filter %>%
