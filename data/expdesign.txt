@@ -1,0 +1,5 @@
+,condition
+KCL1_dedup_sorted.bam,untreated
+KCL2_dedup_sorted.bam,untreated
+NO31_dedup_sorted.bam,treated
+NO32_dedup_sorted.bam,treated

@@ -1,0 +1,318 @@
+---
+output: github_document
+always_allow_html: true
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+# This sets the overall chunk and output style
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README_files/",
+  out.width = "100%"
+)
+
+# This hook enables reference to variables created later on (e.g. in abstract)
+# To refer to such variables, use <%= variable %> or <% code %> (?brew::brew)
+knitr::knit_hooks$set(document = function(x){
+  x1 = paste(x, collapse = '\n')
+  paste(capture.output(brew::brew(text = x1)), collapse = '\n')
+})
+```
+
+# RNA-seq Analysis Workflow with DESeq in R
+
+**Author**: Xiurui Zhu<br />
+**Modified**: `r file.info("README.Rmd")$mtime`<br />
+**Compiled**: `r Sys.time()`
+
+## Introduction
+
+Next-generation sequencing (NGS) is a powerful tool for analyzing gene sequences. There are a couple of packages that help to process NGS data, including sequence alignment data, gene annotation, experimental metadata and significance analysis. In this file, we will go through this process according to [a tutorial for RNA-seq](https://learn.gencore.bio.nyu.edu/rna-seq-analysis/deseq/) in R.
+
+## Methods
+
+### Data preparation
+
+To facilitate the analyses in the workflow, we need to load the following packages: `tidyverse`, `magrittr`, `rlang`, `Rsamtools`, `GenomicFeatures`, `GenomicAlignments`, `DESeq`, `DESeq2`, `GOstats`, `GO.db`, `Category`, `org.At.tair.db` and `ComplexHeatmap`.
+
+```{r libraries, message=FALSE, warning=FALSE, results='hold'}
+# Define a function to check, install (if necessary) and load packages
+check_packages <- function(pkg_name,
+                           repo = c("cran", "github", "Bioconductor"),
+                           repo_path) {
+  repo <- match.arg(repo)
+  # Load installed packages
+  inst_packages <- installed.packages()
+  if (pkg_name %in% inst_packages == FALSE) {
+    cat("* Installing: ", pkg_name, ", repo = ", repo, "\n", sep = "")
+    switch(repo,
+           cran = install.packages(pkg_name),
+           github = {
+             if ("devtools" %in% inst_packages == FALSE) {
+               install.packages("devtools")
+             }
+             devtools::install_github(repo_path)
+           },
+           Bioconductor = {
+             if ("BiocManager" %in% inst_packages == FALSE) {
+               install.packages("BiocManager")
+             }
+             BiocManager::install(pkg_name)
+           })
+  } else {
+    cat("* Package already installed: ", pkg_name, "\n", sep = "")
+  }
+  suppressPackageStartupMessages(
+    library(pkg_name, character.only = TRUE)
+  )
+}
+
+# CRAN packages
+check_packages("tidyverse", repo = "cran")
+purrr::walk(.x = c("magrittr", "rlang"),
+            .f = check_packages, repo = "cran")
+purrr::walk(.x = c("Rsamtools", "GenomicFeatures",
+                   "GenomicAlignments", "DESeq",
+                   "DESeq2", "GOstats", "GO.db",
+                   "Category", "org.At.tair.db",
+                   "ComplexHeatmap"),
+            .f = check_packages, repo = "Bioconductor")
+```
+Alignment data from 4 "bam" files were loaded as pointers to data on disk.
+
+```{r load-bam-files}
+bam_files <- list.files("data", pattern = "\\.bam$", full.names = TRUE) %>%
+  Rsamtools::BamFileList()
+print(bam_files)
+```
+
+Then, a "gtf" annotation file was loaded to locate genomic features and exons were grouped by genes.
+
+```{r annotate-genome, warning=FALSE}
+tx_db <- list.files("data", pattern = "\\.gtf$", full.names = TRUE) %>%
+  GenomicFeatures::makeTxDbFromGFF(format="gtf")
+print(tx_db)
+
+exon_by_gene <- tx_db %>%
+  GenomicFeatures::exonsBy(by = "gene")
+print(exon_by_gene)
+```
+
+Finally, experimental metadata were loaded for a description of the dataset.
+
+```{r load-exp-metadata}
+exp_design <- file.path("data", "expdesign.txt") %>%
+  read.csv(row.names = 1L, sep = ",")
+print(exp_design)
+```
+
+### Read counting and filtering
+
+Reads were first counted with exons grouped by genes.
+
+```{r count-reads, message=FALSE}
+summ_exp <- GenomicAlignments::summarizeOverlaps(
+  features = exon_by_gene,
+  reads = bam_files,
+  mode = "Union",
+  singleEnd = TRUE,
+  ignore.strand = TRUE
+)
+print(summ_exp)
+
+sam_count <- SummarizedExperiment::assay(summ_exp)
+dim(sam_count)
+```
+
+Median counts per condition in experimental metadata were counted and maximal median counts < <%= count_thresh %> were removed.
+
+```{r filter-sam-counts}
+count_thresh <- 10L
+med_count <- sam_count %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Feature_Name") %>%
+  tidyr::pivot_longer(cols = !c("Feature_Name"),
+                      names_to = "File_Name",
+                      values_to = "value") %>%
+  dplyr::inner_join(
+    exp_design %>%
+      tibble::rownames_to_column("File_Name"),
+    by = "File_Name"
+  ) %>%
+  dplyr::group_by(Feature_Name, condition) %>%
+  dplyr::summarize(med_value = median(value, na.rm = TRUE),
+                   .groups = "drop") %>%
+  tidyr::pivot_wider(id_cols = "Feature_Name",
+                     names_from = "condition",
+                     values_from = "med_value") %>%
+  tibble::column_to_rownames("Feature_Name") %>%
+  as.matrix()
+max_med_count <- med_count %>%
+  as.data.frame() %>%
+  tibble::rownames_to_column("Feature_Name") %>%
+  dplyr::mutate(max_count = pmax(!!!dplyr::syms(colnames(med_count)),
+                                 na.rm = TRUE)) %>%
+  dplyr::select(Feature_Name, max_count) %>%
+  tibble::deframe()
+sam_count_filter <- sam_count[
+  names(max_med_count)[max_med_count >= count_thresh],
+  1:ncol(sam_count)
+]
+dim(sam_count_filter)
+```
+
+## Results
+
+Statistical analyses were carried out with `DESeq` package.
+
+### Exploration of differentially expressed genes
+
+A count dataset (data container) was first constructed to analyze data with `DESeq`. Then, size factors and variations were estimated.
+
+```{r constr-deseq-dataset}
+count_deseq <- DESeq::newCountDataSet(
+  countData = sam_count_filter,
+  conditions = exp_design %>%
+    tibble::rownames_to_column("File_Name") %>%
+    tibble::deframe() %>%
+    as.factor() %>%
+    `[`(colnames(sam_count_filter))
+) %>%
+  DESeq::estimateSizeFactors() %>%
+  DESeq::estimateDispersions()
+print(count_deseq)
+DESeq::plotDispEsts(count_deseq)
+```
+
+Next, univariate analysis was performed between the two groups define in `exp_design` and a total of <%= sig_count %> significant genes were discovered.
+
+```{r deseq-univar}
+count_univar <- count_deseq %>%
+  DESeq::nbinomTest("untreated", "treated")
+head(count_univar)
+sig_count <- sum(count_univar[["padj"]] < 0.05, na.rm=T)
+print(sig_count)
+```
+### MA plot
+
+MA plot was used to indicate from the univariate results the required fold change for a gene to be significant against its average count.
+
+```{r deseq-MA-plot}
+DESeq::plotMA(count_univar, ylim = c(-5, 5))
+```
+
+### Significant genes
+
+Significant genes were derived from the univariate results.
+
+```{r signif-genes}
+sig_gene <- c(up = 1, down = -1) %>%
+  purrr::map(~ {
+    count_univar[count_univar[["padj"]] < 0.1 &
+                   abs(count_univar[["log2FoldChange"]]) > 1 &
+                   sign(count_univar[["log2FoldChange"]]) == .x, ]
+  })
+tibble::glimpse(sig_gene)
+sig_gene_comb <- dplyr::bind_rows(sig_gene)
+head(sig_gene_comb)
+```
+
+### Gene annotations
+
+The functions of genes were annotated with data from [an open-source "tair" repository](https://www.arabidopsis.org/download/index-auto.jsp%3Fdir%3D%252Fdownload_files%252FGenes%252FTAIR10_genome_release). Transcript identifiers ending with a dot and a number were removed for matching.
+
+```{r annotate-genes, warning=FALSE}
+gene_desc <- list.files("data",
+                        pattern = "^gene_description",
+                        full.names = TRUE) %>%
+  readr::read_delim(col_types = readr::cols(),
+                    delim = "\t",
+                    col_names = NULL) %>%
+  dplyr::mutate_at("X1",
+                   ~ .x %>%
+                     stringr::str_replace("\\.[0-9]$", "")) %>%
+  dplyr::semi_join(
+    sig_gene_comb,
+    by = c("X1" = "id")
+  ) %>%
+  `colnames<-`(c("id", "class", "annotation", "function", "detail"))
+head(gene_desc[c("id", "annotation")])
+```
+
+### Go-term enrichment analysis
+
+Go-term enrichment analysis was first performed with the significant genes from filtered count matrix.
+
+```{r go-enrich}
+go_params <- new(
+  "GOHyperGParams",
+  geneIds = sig_gene_comb[["id"]],
+  universeGeneIds = rownames(sam_count_filter),
+  annotation = "org.At.tair",
+  ontology = "BP",
+  pvalueCutoff = 0.001,
+  conditional = TRUE,
+  testDirection = "over"
+)
+print(go_params)
+over_rep <- Category::hyperGTest(go_params)
+head(summary(over_rep)[, c(1L, 2L, 5L, 6L, 7L)])
+```
+
+Then, the `rlog`-normalized enrichment results were visualized with heatmaps.
+
+```{r go-enrich-heatmap, fig.height=14}
+go_heatmap_data <- sam_count_filter %>%
+  {
+    `rownames<-`(
+      DESeq2::rlog(., blind = FALSE),
+      rownames(.)
+    )
+  } %>%
+  `[`(sig_gene_comb[["id"]], 1:ncol(.))
+go_heatmap <- go_heatmap_data %>%
+  {
+    `colnames<-`(
+      apply(., MARGIN = 1L, scale) %>%
+        t(),
+      colnames(.)
+    )
+  } %>%
+  ComplexHeatmap::Heatmap(
+    col = circlize::colorRamp2(c(-2, 0, 2),
+                               c("#00FF00", "#000000", "#FF0000")),
+    name = "value",
+    cluster_rows = TRUE,
+    cluster_columns = TRUE,
+    clustering_method_rows = "average",
+    clustering_method_columns = "average",
+    clustering_distance_rows = function(x) {
+      as.dist(1 - cor(t(x), method="pearson"))
+    },
+    clustering_distance_columns = function(x) {
+      as.dist(1 - cor(t(x), method="pearson"))
+    },
+    row_names_gp = grid::gpar(fontsize = 4),
+    column_names_gp = grid::gpar(fontsize = 8),
+    column_names_rot = 0,
+    column_names_centered = TRUE,
+    heatmap_width = grid::unit(1, "native"),
+    heatmap_height = grid::unit(2, "native")
+  )
+ComplexHeatmap::draw(go_heatmap)
+```
+
+## Conclusion
+
+In this workflow, we first prepared RNA-seq data from aligned "bam" files and turned the dataset into a count matrix with filtered gene reads. Then differentiating genes were discovered by univariate analysis with adjusted p-values and fold changes. Finally, significant genes went through GO enrichment analysis and the results were visualized with heatmaps.
+
+## Session info
+
+This file was compiled with the following packages and versions:
+
+```{r session-info}
+utils::sessionInfo()
+```
