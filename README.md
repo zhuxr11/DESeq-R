@@ -3,8 +3,8 @@
 
 # RNA-seq Analysis Workflow with DESeq in R
 
-**Author**: Xiurui Zhu<br /> **Modified**: 2021-10-27 16:29:15<br />
-**Compiled**: 2021-10-27 16:29:17
+**Author**: Xiurui Zhu<br /> **Modified**: 2021-10-28 09:57:36<br />
+**Compiled**: 2021-10-28 09:57:42
 
 ## Introduction
 
@@ -113,7 +113,7 @@ print(tx_db)
 #> # Genome: NA
 #> # Nb of transcripts: 41671
 #> # Db created by: GenomicFeatures package from Bioconductor
-#> # Creation time: 2021-10-27 16:30:25 +0800 (Wed, 27 Oct 2021)
+#> # Creation time: 2021-10-28 09:58:58 +0800 (Thu, 28 Oct 2021)
 #> # GenomicFeatures version at creation time: 1.40.1
 #> # RSQLite version at creation time: 2.2.8
 #> # DBSCHEMAVERSION: 1.2
@@ -467,10 +467,11 @@ print(summary(over_rep)[, c(1L, 2L, 5L, 6L, 7L)])
 
 ### Heatmap and hierarchical clustering
 
-The `rlog`-normalized filtered count matrix was visualized with heatmap.
+The `rlog`-normalized count matrix (significant genes only) was
+visualized with heatmap.
 
 ``` r
-go_heatmap_data <- sam_count_filter %>%
+sig_heatmap_data <- sam_count_filter %>%
   {
     `rownames<-`(
       DESeq2::rlog(., blind = FALSE),
@@ -478,7 +479,7 @@ go_heatmap_data <- sam_count_filter %>%
     )
   } %>%
   `[`(sig_gene_comb[["id"]], 1:ncol(.))
-go_heatmap <- go_heatmap_data %>%
+sig_heatmap <- sig_heatmap_data %>%
   {
     `colnames<-`(
       apply(., MARGIN = 1L, scale) %>%
@@ -507,10 +508,10 @@ go_heatmap <- go_heatmap_data %>%
     heatmap_width = grid::unit(1, "native"),
     heatmap_height = grid::unit(2, "native")
   )
-ComplexHeatmap::draw(go_heatmap)
+ComplexHeatmap::draw(sig_heatmap)
 ```
 
-<img src="README_files/go-enrich-heatmap-1.png" width="100%" />
+<img src="README_files/sig-gene-heatmap-1.png" width="100%" />
 
 ## Conclusion
 

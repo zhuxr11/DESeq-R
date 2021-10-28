@@ -264,10 +264,10 @@ print(summary(over_rep)[, c(1L, 2L, 5L, 6L, 7L)])
 
 ### Heatmap and hierarchical clustering
 
-The `rlog`-normalized filtered count matrix was visualized with heatmap.
+The `rlog`-normalized count matrix (significant genes only) was visualized with heatmap.
 
-```{r go-enrich-heatmap, fig.height=14}
-go_heatmap_data <- sam_count_filter %>%
+```{r sig-gene-heatmap, fig.height=14}
+sig_heatmap_data <- sam_count_filter %>%
   {
     `rownames<-`(
       DESeq2::rlog(., blind = FALSE),
@@ -275,7 +275,7 @@ go_heatmap_data <- sam_count_filter %>%
     )
   } %>%
   `[`(sig_gene_comb[["id"]], 1:ncol(.))
-go_heatmap <- go_heatmap_data %>%
+sig_heatmap <- sig_heatmap_data %>%
   {
     `colnames<-`(
       apply(., MARGIN = 1L, scale) %>%
@@ -304,7 +304,7 @@ go_heatmap <- go_heatmap_data %>%
     heatmap_width = grid::unit(1, "native"),
     heatmap_height = grid::unit(2, "native")
   )
-ComplexHeatmap::draw(go_heatmap)
+ComplexHeatmap::draw(sig_heatmap)
 ```
 
 ## Conclusion
